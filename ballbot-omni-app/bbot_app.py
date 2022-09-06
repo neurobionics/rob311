@@ -28,7 +28,7 @@ MAX_BRIGHTNESS = 0.055
 MIN_BRIGHTNESS = 0.01
 
 MAX_TILT = np.deg2rad(5) # Maximum inclination: 5 degrees
-MAX_LINEAR_VELOCITY = 0.7 # m/s --> Corresponds to lean angle as of now.
+MAX_LINEAR_VELOCITY = 0.7 # m/s --> Corresponds to duty cycle as for now.
 
 MAX_DUTY = 0.8
 
@@ -405,15 +405,15 @@ if __name__ == "__main__":
             #     dphi_pitch_pid.setpoint += mo_controller.pitch_velocity * DT
 
             if np.abs(states['theta_roll']) > MAX_TILT or np.abs(states['theta_pitch']) > MAX_TILT:
-                setpoints['phi_roll_sp'] = 0.0 # dphi_roll_pid(filtered_dphi_roll)
-                setpoints['phi_pitch_sp'] = 0.0 # dphi_pitch_pid(filtered_dphi_pitch)
+                setpoints['phi_roll_duty'] = 0.0 # dphi_roll_pid(filtered_dphi_roll)
+                setpoints['phi_pitch_duty'] = 0.0 # dphi_pitch_pid(filtered_dphi_pitch)
             else:
-                setpoints['phi_roll_sp'] = dphi_roll_pid(filtered_dphi_roll)
-                setpoints['phi_pitch_sp'] = dphi_pitch_pid(filtered_dphi_pitch)
+                setpoints['phi_roll_duty'] = filtered_dphi_roll_sp # dphi_roll_pid(filtered_dphi_roll)
+                setpoints['phi_pitch_duty'] = filtered_dphi_pitch_sp # dphi_pitch_pid(filtered_dphi_pitch)
 
 
-            # setpoints['phi_roll_sp'] = filtered_dphi_roll_sp # dphi_roll_pid(filtered_dphi_roll)
-            # setpoints['phi_pitch_sp'] = filtered_dphi_pitch_sp # dphi_pitch_pid(filtered_dphi_pitch)
+            # setpoints['phi_roll_duty'] = filtered_dphi_roll_sp # dphi_roll_pid(filtered_dphi_roll)
+            # setpoints['phi_pitch_duty'] = filtered_dphi_pitch_sp # dphi_pitch_pid(filtered_dphi_pitch)
 
             print(mo_controller.roll_velocity, mo_controller.pitch_velocity)
 
@@ -423,7 +423,7 @@ if __name__ == "__main__":
             ser_dev.send_topic_data(101, setpoints)
 
             # data = [dphi_roll_array[-1], filtered_dphi_roll, dphi_pitch_array[-1], filtered_dphi_pitch]
-            data = [dphi_roll_sp_array[-1], setpoints['phi_roll_sp'], dphi_pitch_sp_array[-1], setpoints['phi_pitch_sp']]
+            data = [dphi_roll_sp_array[-1], setpoints['phi_roll_duty'], dphi_pitch_sp_array[-1], setpoints['phi_pitch_duty']]
             # data = [0.0, states['theta_roll'], 0.0, states['theta_pitch']]
             # data = [states['theta_roll'], states['theta_pitch']]
 
@@ -444,8 +444,8 @@ if __name__ == "__main__":
         except KeyboardInterrupt as key:
             print("Resetting Mo commands.")
             setpoints['kill'] = 1.0
-            setpoints['phi_roll_sp'] = 0.0
-            setpoints['phi_pitch_sp'] = 0.0
+            setpoints['phi_roll_duty'] = 0.0
+            setpoints['phi_pitch_duty'] = 0.0
             ser_dev.send_topic_data(101, setpoints)
 
             dots.fill(color=(0, 0, 0))

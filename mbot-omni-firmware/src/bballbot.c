@@ -255,8 +255,12 @@ int main() {
                 // printf("Roll SP: %7.3f, Roll: %7.3f <<>> Pitch SP: %7.3f, Pitch: %7.3f", theta_roll_sp, mpu_data.dmp_TaitBryan[1], theta_pitch_sp, mpu_data.dmp_TaitBryan[0]);
 
                 // MARCH THE OUTER THETA PID LOOP
-                theta_roll_duty = rc_filter_march(&theta_roll_command, mo_cmd.phi_roll_sp - mo_state.theta_roll);
-                theta_pitch_duty = rc_filter_march(&theta_pitch_command, mo_cmd.phi_pitch_sp - mo_state.theta_pitch);
+                theta_roll_duty = rc_filter_march(&theta_roll_command, theta_roll_sp - mo_state.theta_roll);
+                theta_pitch_duty = rc_filter_march(&theta_pitch_command, theta_pitch_sp - mo_state.theta_pitch);
+
+                roll_duty = theta_roll_duty + mo_cmd.phi_roll_duty;
+                pitch_duty = theta_pitch_duty + mo_cmd.phi_pitch_duty;
+                yaw_duty = theta_yaw_duty + mo_cmd.phi_yaw_duty;
 
                 motor_1_duty = (0.3333) * (yaw_duty + (1.4142 * ((roll_duty * cos(mo_state.theta_yaw)) - (pitch_duty * sin(mo_state.theta_yaw)))));
                 motor_2_duty = (0.3333) * (yaw_duty + (0.7071 * (((pitch_duty - 1 * 1.7320 * roll_duty) * sin(mo_state.theta_yaw)) - ((roll_duty + 1.7320 * pitch_duty) * cos(mo_state.theta_yaw)))));
@@ -266,7 +270,7 @@ int main() {
                 motor_2_pwm = compute_pwm(motor_2_duty);
                 motor_3_pwm = compute_pwm(motor_3_duty);
 
-                printf("ROLL 1: %7.3f, PITCH 2: %7.3f", mo_cmd.phi_roll_sp, mo_cmd.phi_pitch_sp);
+                printf("ROLL 1: %7.3f, PITCH 2: %7.3f, YAW 3: %7.3f", roll_duty, pitch_duty, yaw_duty);
 
                 rc_motor_set(1, motor_1_pwm);
                 rc_motor_set(2, motor_2_pwm);
