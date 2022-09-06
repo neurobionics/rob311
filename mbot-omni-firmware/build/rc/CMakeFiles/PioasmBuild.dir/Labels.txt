@@ -1,0 +1,13 @@
+# Target labels
+ PioasmBuild
+# Source files and their labels
+/home/pi/rob311/mbot-omni-firmware/build/rc/CMakeFiles/PioasmBuild
+/home/pi/rob311/mbot-omni-firmware/build/rc/CMakeFiles/PioasmBuild.rule
+/home/pi/rob311/mbot-omni-firmware/build/rc/CMakeFiles/PioasmBuild-complete.rule
+/home/pi/rob311/mbot-omni-firmware/build/rc/pioasm/src/PioasmBuild-stamp/PioasmBuild-install.rule
+/home/pi/rob311/mbot-omni-firmware/build/rc/pioasm/src/PioasmBuild-stamp/PioasmBuild-mkdir.rule
+/home/pi/rob311/mbot-omni-firmware/build/rc/pioasm/src/PioasmBuild-stamp/PioasmBuild-download.rule
+/home/pi/rob311/mbot-omni-firmware/build/rc/pioasm/src/PioasmBuild-stamp/PioasmBuild-update.rule
+/home/pi/rob311/mbot-omni-firmware/build/rc/pioasm/src/PioasmBuild-stamp/PioasmBuild-patch.rule
+/home/pi/rob311/mbot-omni-firmware/build/rc/pioasm/src/PioasmBuild-stamp/PioasmBuild-configure.rule
+/home/pi/rob311/mbot-omni-firmware/build/rc/pioasm/src/PioasmBuild-stamp/PioasmBuild-build.rule
