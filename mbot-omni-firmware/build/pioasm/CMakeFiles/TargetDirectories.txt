@@ -1,3 +1,0 @@
-/home/pi/rob311/mbot-omni-firmware/build/pioasm/CMakeFiles/rebuild_cache.dir
-/home/pi/rob311/mbot-omni-firmware/build/pioasm/CMakeFiles/edit_cache.dir
-/home/pi/rob311/mbot-omni-firmware/build/pioasm/CMakeFiles/pioasm.dir
