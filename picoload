@@ -1,7 +1,7 @@
 VOLUME="$1"
 
 sudo mount "$VOLUME" /mnt/pico
-sudo cp /home/pi/rob311/mbot-omni-firmware/build/src/bballbot.uf2 /mnt/pico/
+sudo cp /home/$USER/rob311/mbot-omni-firmware/build/src/bballbot.uf2 /mnt/pico/
 ls /mnt/pico
 sudo sync
 
