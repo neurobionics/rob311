@@ -38,7 +38,7 @@ ARC_STOP = 2*np.pi - np.deg2rad(15)
 ARC = ARC_STOP - ARC_START
 ARC_PER_DOT = ARC/N_DOTS
 
-THETA_KP = 22.0
+THETA_KP = 24.0
 THETA_KI = 0.0
 THETA_KD = 0.1
 
@@ -357,7 +357,7 @@ if __name__ == "__main__":
             if not zeroed:
                 print("SLEEPING!!!!")
                 dots.fill(color=(255, 80, 10))
-                dots.show()                
+                dots.show()
                 time.sleep(1)
 
                 dpsi[0] = states['psi_1']
@@ -374,7 +374,6 @@ if __name__ == "__main__":
                 print(dphi_roll_pid.setpoint, dphi_pitch_pid.setpoint)
                 zeroed = True
                 print("Rock and roll!")
-
 
             dphi_roll_array = np.delete(dphi_roll_array, 0, axis=0)
             dphi_roll_array = np.append(dphi_roll_array, dphi[0], axis=0)
@@ -405,12 +404,11 @@ if __name__ == "__main__":
             #     dphi_pitch_pid.setpoint += mo_controller.pitch_velocity * DT
 
             if np.abs(states['theta_roll']) > MAX_TILT or np.abs(states['theta_pitch']) > MAX_TILT:
-                setpoints['phi_roll_duty'] = 0.0 # dphi_roll_pid(filtered_dphi_roll)
-                setpoints['phi_pitch_duty'] = 0.0 # dphi_pitch_pid(filtered_dphi_pitch)
+                setpoints['theta_roll_sp'] = 0.0 # dphi_roll_pid(filtered_dphi_roll)
+                setpoints['theta_pitch_sp'] = 0.0 # dphi_pitch_pid(filtered_dphi_pitch)
             else:
-                setpoints['phi_roll_duty'] = filtered_dphi_roll_sp # dphi_roll_pid(filtered_dphi_roll)
-                setpoints['phi_pitch_duty'] = filtered_dphi_pitch_sp # dphi_pitch_pid(filtered_dphi_pitch)
-
+                setpoints['theta_roll_sp'] = 0.0 # dphi_roll_pid(filtered_dphi_roll)
+                setpoints['theta_pitch_sp'] = 0.0 # dphi_pitch_pid(filtered_dphi_pitch)
 
             # setpoints['phi_roll_duty'] = filtered_dphi_roll_sp # dphi_roll_pid(filtered_dphi_roll)
             # setpoints['phi_pitch_duty'] = filtered_dphi_pitch_sp # dphi_pitch_pid(filtered_dphi_pitch)
@@ -423,7 +421,7 @@ if __name__ == "__main__":
             ser_dev.send_topic_data(101, setpoints)
 
             # data = [dphi_roll_array[-1], filtered_dphi_roll, dphi_pitch_array[-1], filtered_dphi_pitch]
-            data = [dphi_roll_sp_array[-1], setpoints['phi_roll_duty'], dphi_pitch_sp_array[-1], setpoints['phi_pitch_duty']]
+            data = [dphi_roll_sp_array[-1], setpoints['theta_roll_sp'], dphi_pitch_sp_array[-1], setpoints['theta_pitch_sp']]
             # data = [0.0, states['theta_roll'], 0.0, states['theta_pitch']]
             # data = [states['theta_roll'], states['theta_pitch']]
 
@@ -444,8 +442,8 @@ if __name__ == "__main__":
         except KeyboardInterrupt as key:
             print("Resetting Mo commands.")
             setpoints['kill'] = 1.0
-            setpoints['phi_roll_duty'] = 0.0
-            setpoints['phi_pitch_duty'] = 0.0
+            setpoints['theta_roll_sp'] = 0.0
+            setpoints['theta_pitch_sp'] = 0.0
             ser_dev.send_topic_data(101, setpoints)
 
             dots.fill(color=(0, 0, 0))

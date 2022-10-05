@@ -2,9 +2,9 @@ import numpy as np
 
 mo_cmds_dtype =  np.dtype([
     ("kill", np.double),
-    ("phi_roll_duty", np.double),
-    ("phi_pitch_duty", np.double),
-    ("phi_yaw_duty", np.double)
+    ("theta_roll_sp", np.double),
+    ("theta_pitch_sp", np.double),
+    ("theta_yaw_sp", np.double)
 ])
 
 mo_states_dtype =  np.dtype([  
