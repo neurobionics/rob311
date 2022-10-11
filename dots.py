@@ -5,6 +5,8 @@ import time
 import numpy as np
 import adafruit_dotstar as dotstar
 
+# TEST
+
 FREQ = 200
 DT = 1/FREQ
 
