@@ -8,9 +8,9 @@
 
 typedef struct mo_cmds {
     double kill;
-    double theta_roll_sp; // Roll Set Point
-    double theta_pitch_sp; // Pitch Set Point
-    double theta_yaw_sp; // Yaw Set Point
+    double motor_1_duty; // Motor 1 Duty
+    double motor_2_duty; // Motor 2 Duty
+    double motor_3_duty; // Motor 3 Duty
 } mo_cmds_t;
 
 int mo_cmds_t_deserialize(uint8_t* src, mo_cmds_t* dest);

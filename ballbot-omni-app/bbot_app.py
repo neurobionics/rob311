@@ -30,7 +30,7 @@ MIN_BRIGHTNESS = 0.01
 MAX_TILT = np.deg2rad(5) # Maximum inclination: 5 degrees
 MAX_LINEAR_VELOCITY = 0.7 # m/s --> Corresponds to duty cycle as for now.
 
-MAX_DUTY = 0.8
+MAX_DUTY = 0.7
 
 ARC_START = np.deg2rad(15)
 ARC_STOP = 2*np.pi - np.deg2rad(15)
@@ -38,33 +38,9 @@ ARC_STOP = 2*np.pi - np.deg2rad(15)
 ARC = ARC_STOP - ARC_START
 ARC_PER_DOT = ARC/N_DOTS
 
-THETA_KP = 24.0
+THETA_KP = 7.0
 THETA_KI = 0.0
-THETA_KD = 0.1
-
-DPHI_KP_PITCH = 0.0
-DPHI_KI_PITCH = 0.0
-DPHI_KD_PITCH = 0.0
-
-DPHI_KP_ROLL = 0.0
-DPHI_KI_ROLL = 0.0
-DPHI_KD_ROLL = 0.0
-
-BUTTERWORTH_ORDER = 2
-BUTTERWORTH_CUTOFF_HZ = 30
-BUTTERWORTH_PADDING = 12
-
-BUTTERWORTH_NYQ = 0.5 * FREQ
-BUTTERWORTH_CUTOFF = BUTTERWORTH_CUTOFF_HZ/BUTTERWORTH_NYQ
-BUTTERWORTH_BF, BUTTERWORTH_AF = butter(BUTTERWORTH_ORDER, BUTTERWORTH_CUTOFF, btype='low', analog=False)
-
-BUTTERWORTH_SP_ORDER = 2
-BUTTERWORTH_SP_CUTOFF_HZ = 2
-BUTTERWORTH_SP_PADDING = 12
-
-BUTTERWORTH_SP_NYQ = 0.5 * FREQ
-BUTTERWORTH_SP_CUTOFF = BUTTERWORTH_SP_CUTOFF_HZ/BUTTERWORTH_SP_NYQ
-BUTTERWORTH_SP_BF, BUTTERWORTH_SP_AF = butter(BUTTERWORTH_SP_ORDER, BUTTERWORTH_SP_CUTOFF, btype='high', analog=False)
+THETA_KD = 0.01
 
 J11 = -2 * RW/(3 * RK * np.cos(ALPHA))
 J12 = RW / (3 * RK * np.cos(ALPHA))
@@ -133,9 +109,8 @@ class MoController(Controller):
         sys.exit()
 
 def register_topics(ser_dev:SerialProtocol):
-    # Mo :: Commands, Gains, States
+    # Mo :: Commands, States
     ser_dev.serializer_dict[101] = [lambda bytes: np.frombuffer(bytes, dtype=mo_cmds_dtype), lambda data: data.tobytes()]
-    ser_dev.serializer_dict[111] = [lambda bytes: np.frombuffer(bytes, dtype=mo_pid_params_dtype), lambda data: data.tobytes()]
     ser_dev.serializer_dict[121] = [lambda bytes: np.frombuffer(bytes, dtype=mo_states_dtype), lambda data: data.tobytes()]
 
 def init_lights(brightness):
@@ -196,42 +171,6 @@ if __name__ == "__main__":
                     'yrange': [-2.0 * np.pi, 2.0 * np.pi]
                     }
 
-    filter_states = {'names': ['Motor 1 Raw', 'Motor 1 Filtered', 'Motor 2 Raw', 'Motor 2 Filtered', 'Motor 3 Raw', 'Motor 3 Filtered'],
-                    'title': "Butterworth Filter",
-                    'ylabel': "rad/sec",
-                    'xlabel': "time",
-                    'colors' : ["r", "g", "b", "y", "m", "c"],
-                    'line_width': [2]*6,
-                    'yrange': [-2.0 * np.pi, 2.0 * np.pi]
-                    }
-
-    dphi_filtering = {'names': ['Ball Roll Raw', 'Ball Roll Filtered', 'Ball Pitch Raw', 'Ball Pitch Filtered'],
-                    'title': "dPhi Filtering",
-                    'ylabel': "m/s",
-                    'xlabel': "time",
-                    'colors' : ["r", "g", "b", "y"],
-                    'line_width': [2]*4,
-                    # 'yrange': [-MAX_ANGULAR_VELOCITY, MAX_ANGULAR_VELOCITY]
-                    }
-
-    dphi_roll_controller = {'names': ['Proportional', 'Integral', 'Derivative', 'Controller Output'],
-                    'title': "Dphi Roll",
-                    'ylabel': "rad",
-                    'xlabel': "time",
-                    'colors' : ["r", "g", "b", "y"],
-                    'line_width': [2]*4,
-                    'yrange': [-MAX_TILT, MAX_TILT]
-                    }
-
-    velocity_controller = {'names': ['SP Ball Roll', 'Ball Roll', 'SP Ball Pitch', 'Ball Pitch'],
-                    'title': "Velocity Controller",
-                    'ylabel': "m",
-                    'xlabel': "time",
-                    'colors' : ["r", "g", "b", "y"],
-                    'line_width': [2]*4,
-                    # 'yrange': [-MAX_ANGULAR_VELOCITY, MAX_ANGULAR_VELOCITY]
-                    }
-
     stability_controller = {'names': ['SP Body Roll', 'Body Roll', 'SP Body Pitch', 'Body Pitch'],
                     'title': "Stability Controller",
                     'ylabel': "rad",
@@ -241,25 +180,7 @@ if __name__ == "__main__":
                     'yrange': [-MAX_TILT, MAX_TILT]
                     }
 
-    roll_control = {'names': ['Roll Setpoint', 'Roll'],
-                    'title': "Roll PID Controller",
-                    'ylabel': "rad",
-                    'xlabel': "time",
-                    'colors' : ["r", "b"],
-                    'line_width': [2]*2,
-                    'yrange': [-0.5 * np.pi, 0.5 * np.pi]
-                    }
-
-    pitch_control = {'names': ['Pitch Setpoint', 'Pitch'],
-                    'title': "Pitch PID Controller",
-                    'ylabel': "rad",
-                    'xlabel': "time",
-                    'colors' : ["r", "b"],
-                    'line_width': [2]*2,
-                    'yrange': [-0.5 * np.pi, 0.5 * np.pi]
-                    }
-
-    plot_config = [velocity_controller]
+    plot_config = [stability_controller]
     client.initialize_plots(plot_config)
 
     ser_dev = SerialProtocol()
@@ -270,22 +191,17 @@ if __name__ == "__main__":
     serial_read_thread.start()
 
     # Local structs
-    setpoints = np.zeros(1, dtype=mo_cmds_dtype)[0]
-    gains = np.zeros(1, dtype=mo_pid_params_dtype)[0]
+    commands = np.zeros(1, dtype=mo_cmds_dtype)[0]
     states = np.zeros(1, dtype=mo_states_dtype)[0]
 
-    gains['theta_kp'] = THETA_KP
-    gains['theta_ki'] = THETA_KI
-    gains['theta_kd'] = THETA_KD
-
-    setpoints['kill'] = 0.0
+    commands['kill'] = 0.0
 
     # Time for comms to sync
     time.sleep(1.0)
 
     # Send the gains 
-    ser_dev.send_topic_data(111, gains)
-    ser_dev.send_topic_data(101, setpoints)
+    # ser_dev.send_topic_data(111, gains)
+    ser_dev.send_topic_data(101, commands)
 
     local_time = 0
     pico_dt = DT
@@ -304,30 +220,24 @@ if __name__ == "__main__":
     dphi_zero = np.zeros((3, 1))
     dpsi_offset = np.zeros((3, 1))
 
-    dphi_roll_array = np.zeros(BUTTERWORTH_PADDING)
-    dphi_pitch_array = np.zeros(BUTTERWORTH_PADDING)
-
-    dphi_roll_sp_array = np.zeros(BUTTERWORTH_PADDING)
-    dphi_pitch_sp_array = np.zeros(BUTTERWORTH_PADDING)
-
     filtered_dphi_roll = 0.0
     filtered_dphi_pitch = 0.0
 
-    filtered_dphi_roll_sp = 0.0
-    filtered_dphi_pitch_sp = 0.0
+    filtered_theta_roll_sp = 0.0
+    filtered_theta_pitch_sp = 0.0
 
-    dphi_roll_sp = 0.0
-    dphi_pitch_sp = 0.0
+    theta_roll_sp = 0.0
+    theta_pitch_sp = 0.0
 
-    dphi_roll_pid = PID(DPHI_KP_ROLL, DPHI_KI_ROLL, DPHI_KD_ROLL, dphi_roll_sp)
-    dphi_pitch_pid = PID(DPHI_KP_PITCH, DPHI_KI_PITCH, DPHI_KD_PITCH, dphi_pitch_sp)
+    theta_roll_pid = PID(THETA_KP, THETA_KI, THETA_KD, theta_roll_sp)
+    theta_pitch_pid = PID(THETA_KP, THETA_KI, THETA_KD, theta_pitch_sp)
 
-    dphi_roll_pid.output_limits = (-MAX_DUTY, MAX_DUTY)
-    dphi_pitch_pid.output_limits = (-MAX_DUTY, MAX_DUTY)
+    theta_roll_pid.output_limits = (-MAX_DUTY, MAX_DUTY)
+    theta_pitch_pid.output_limits = (-MAX_DUTY, MAX_DUTY)
     
-    mo_controller = MoController(interface="/dev/input/js0", connecting_using_ds4drv=False)
-    mo_controller_thread = threading.Thread(target=mo_controller.listen, args=(10,))
-    mo_controller_thread.start()
+    # mo_controller = MoController(interface="/dev/input/js0", connecting_using_ds4drv=False)
+    # mo_controller_thread = threading.Thread(target=mo_controller.listen, args=(10,))
+    # mo_controller_thread.start()
 
     dots = init_lights(MAX_BRIGHTNESS)
 
@@ -341,8 +251,6 @@ if __name__ == "__main__":
                 dots.show()
                 continue
 
-            # print("<< ROLLING >>")
-
             pico_dt = states['timestep']
             local_time += pico_dt
 
@@ -354,81 +262,33 @@ if __name__ == "__main__":
             dphi[1] = -1.0 * dphi[1]
             dphi = RK * dphi
 
-            if not zeroed:
-                print("SLEEPING!!!!")
-                dots.fill(color=(255, 80, 10))
-                dots.show()
-                time.sleep(1)
+            Tx = theta_roll_pid(states['theta_roll'])
+            Ty = theta_pitch_pid(states['theta_pitch'])
+            Tz = 0.0
 
-                dpsi[0] = states['psi_1']
-                dpsi[1] = states['psi_2']
-                dpsi[2] = states['psi_3']
+            # Motor 1-3's positive direction is flipped hence the negative sign
 
-                dphi_zero = np.matmul(J, dpsi)
-                dphi_zero[1] = -1.0 * dphi_zero[1]
-                dphi_zero = RK * dphi_zero
+            commands['motor_1_duty'] = (-0.3333) * (Tz - (2.8284 * Ty))
+            commands['motor_2_duty'] = (-0.3333) * (Tz + (1.4142 * (Ty + 1.7320 * Tx))) 
+            commands['motor_3_duty'] = (-0.3333) * (Tz + (1.4142 * (Ty - 1.7320 * Tx)))
 
-                dphi_roll_pid.setpoint = dphi_zero[0][0]
-                dphi_pitch_pid.setpoint = dphi_zero[1][0]
-
-                print(dphi_roll_pid.setpoint, dphi_pitch_pid.setpoint)
-                zeroed = True
-                print("Rock and roll!")
-
-            dphi_roll_array = np.delete(dphi_roll_array, 0, axis=0)
-            dphi_roll_array = np.append(dphi_roll_array, dphi[0], axis=0)
-
-            dphi_pitch_array = np.delete(dphi_pitch_array, 0, axis=0)
-            dphi_pitch_array = np.append(dphi_pitch_array, dphi[1], axis=0)
-
-            dphi_roll_sp_array = np.delete(dphi_roll_sp_array, 0, axis=0)
-            dphi_roll_sp_array = np.append(dphi_roll_sp_array, [mo_controller.roll_velocity], axis=0)
-
-            dphi_pitch_sp_array = np.delete(dphi_pitch_sp_array, 0, axis=0)
-            dphi_pitch_sp_array = np.append(dphi_pitch_sp_array, [mo_controller.pitch_velocity], axis=0)
-
-            filtered_dphi_roll = lfilter(BUTTERWORTH_BF, BUTTERWORTH_AF, dphi_roll_array)[-1]
-            filtered_dphi_pitch = lfilter(BUTTERWORTH_BF, BUTTERWORTH_AF, dphi_pitch_array)[-1]
-
-            filtered_dphi_roll_sp = lfilter(BUTTERWORTH_SP_BF, BUTTERWORTH_SP_AF, dphi_roll_sp_array)[-1]
-            filtered_dphi_pitch_sp = lfilter(BUTTERWORTH_SP_BF, BUTTERWORTH_SP_AF, dphi_pitch_sp_array)[-1]
-
-            dphi_roll_pid.setpoint += mo_controller.roll_velocity * DT
-            dphi_pitch_pid.setpoint += mo_controller.pitch_velocity * DT
-
-            # if np.abs(states['theta_roll']) > MAX_TILT or np.abs(states['theta_pitch']) > MAX_TILT:
-            #     dphi_roll_pid.setpoint += 0.0
-            #     dphi_pitch_pid.setpoint += 0.0
-            # else:
-            #     dphi_roll_pid.setpoint += mo_controller.roll_velocity * DT
-            #     dphi_pitch_pid.setpoint += mo_controller.pitch_velocity * DT
-
-            if np.abs(states['theta_roll']) > MAX_TILT or np.abs(states['theta_pitch']) > MAX_TILT:
-                setpoints['theta_roll_sp'] = 0.0 # dphi_roll_pid(filtered_dphi_roll)
-                setpoints['theta_pitch_sp'] = 0.0 # dphi_pitch_pid(filtered_dphi_pitch)
-            else:
-                setpoints['theta_roll_sp'] = 0.0 # dphi_roll_pid(filtered_dphi_roll)
-                setpoints['theta_pitch_sp'] = 0.0 # dphi_pitch_pid(filtered_dphi_pitch)
-
-            # setpoints['phi_roll_duty'] = filtered_dphi_roll_sp # dphi_roll_pid(filtered_dphi_roll)
-            # setpoints['phi_pitch_duty'] = filtered_dphi_pitch_sp # dphi_pitch_pid(filtered_dphi_pitch)
-
-            print(mo_controller.roll_velocity, mo_controller.pitch_velocity)
+            # commands['phi_Tx'] = filtered_theta_roll_sp # theta_roll_pid(filtered_dphi_roll)
+            # commands['phi_Ty'] = filtered_theta_pitch_sp # theta_pitch_pid(filtered_dphi_pitch)
 
             # data = [states['theta_roll'], states['theta_pitch'], states['theta_yaw'], states['dpsi_1'], states['dpsi_2'], states['dpsi_3']]
-            # data = [setpoints['theta_roll_sp'], states['theta_roll'], setpoints['theta_pitch_sp'], states['theta_pitch']]
+            # data = [commands['theta_roll_sp'], states['theta_roll'], commands['theta_pitch_sp'], states['theta_pitch']]
 
-            ser_dev.send_topic_data(101, setpoints)
+            ser_dev.send_topic_data(101, commands)
+            print(states['theta_roll'], states['theta_pitch'])
 
             # data = [dphi_roll_array[-1], filtered_dphi_roll, dphi_pitch_array[-1], filtered_dphi_pitch]
-            data = [dphi_roll_sp_array[-1], setpoints['theta_roll_sp'], dphi_pitch_sp_array[-1], setpoints['theta_pitch_sp']]
-            # data = [0.0, states['theta_roll'], 0.0, states['theta_pitch']]
+            # data = [theta_roll_sp_array[-1], commands['theta_roll_sp'], theta_pitch_sp_array[-1], commands['theta_pitch_sp']]
+            # data = [commands['theta_roll_sp'], states['theta_roll'], commands['theta_pitch_sp'], states['theta_pitch']]
             # data = [states['theta_roll'], states['theta_pitch']]
-
-            client.send_array(data)
+            # client.send_array(data)
 
             if np.abs(states['theta_roll']) != 0.0:
-                danger = compute_dots(states['theta_roll'], -1.0 * states['theta_pitch'])
+                danger = compute_dots(states['theta_roll'], states['theta_pitch'])
 
             for dot in range(N_DOTS):
                 if dot in danger:
@@ -441,10 +301,11 @@ if __name__ == "__main__":
 
         except KeyboardInterrupt as key:
             print("Resetting Mo commands.")
-            setpoints['kill'] = 1.0
-            setpoints['theta_roll_sp'] = 0.0
-            setpoints['theta_pitch_sp'] = 0.0
-            ser_dev.send_topic_data(101, setpoints)
+            commands['kill'] = 1.0
+            commands['motor_1_duty'] = 0.0
+            commands['motor_2_duty'] = 0.0
+            commands['motor_3_duty'] = 0.0
+            ser_dev.send_topic_data(101, commands)
 
             dots.fill(color=(0, 0, 0))
             dots.show()            
