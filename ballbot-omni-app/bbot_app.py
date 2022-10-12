@@ -38,7 +38,7 @@ ARC_STOP = 2*np.pi - np.deg2rad(15)
 ARC = ARC_STOP - ARC_START
 ARC_PER_DOT = ARC/N_DOTS
 
-THETA_KP = 22.0
+THETA_KP = 11.0
 THETA_KI = 0.0
 THETA_KD = 0.1
 
@@ -430,7 +430,7 @@ if __name__ == "__main__":
             client.send_array(data)
 
             if np.abs(states['theta_roll']) != 0.0:
-                danger = compute_dots(states['theta_roll'], -1.0 * states['theta_pitch'])
+                danger = compute_dots(states['theta_pitch'], states['theta_roll'])
 
             for dot in range(N_DOTS):
                 if dot in danger:
