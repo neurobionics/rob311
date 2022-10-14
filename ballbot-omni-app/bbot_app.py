@@ -12,36 +12,6 @@ from pyPS4Controller.controller import Controller
 import board
 import adafruit_dotstar as dotstar
 
-# CONTROL BANDWITH: 0.85943669 Degrees
-
-JOYSTICK_SCALE = 32767
-
-FREQ = 200
-DT = 1/FREQ
-
-RW = 0.0048
-RK = 0.1210
-ALPHA = np.deg2rad(45)
-
-N_DOTS = 72
-MAX_BRIGHTNESS = 0.055
-MIN_BRIGHTNESS = 0.01
-
-MAX_TILT = np.deg2rad(5) # Maximum inclination: 5 degrees
-MAX_LINEAR_VELOCITY = 0.7 # m/s --> Corresponds to duty cycle as for now.
-
-MAX_DUTY = 0.7
-
-ARC_START = np.deg2rad(15)
-ARC_STOP = 2*np.pi - np.deg2rad(15)
-
-ARC = ARC_STOP - ARC_START
-ARC_PER_DOT = ARC/N_DOTS
-
-THETA_KP = 8.0
-THETA_KI = 0.0
-THETA_KD = 0.0
-
 # ---------------------------------------------------------------------------
 # Gray C. Thomas, Ph.D's Soft Real Time Loop
 # This library will soon be hosted as a PIP module and added as a python dependency.
@@ -215,6 +185,48 @@ class SoftRealtimeLoop:
 
 # ---------------------------------------------------------------------------
 
+
+JOYSTICK_SCALE = 32767
+
+FREQ = 200
+DT = 1/FREQ
+
+RW = 0.0048
+RK = 0.1210
+ALPHA = np.deg2rad(45)
+
+N_DOTS = 72
+MAX_BRIGHTNESS = 0.055
+MIN_BRIGHTNESS = 0.01
+
+MAX_TILT = np.deg2rad(5) # Maximum inclination: 5 degrees
+MAX_BALL_VELOCITY = 0.5 # m/s
+
+MAX_DUTY = 0.8
+
+ARC_START = np.deg2rad(15)
+ARC_STOP = 2*np.pi - np.deg2rad(15)
+
+ARC = ARC_STOP - ARC_START
+ARC_PER_DOT = ARC/N_DOTS
+
+THETA_KP = 11.0
+THETA_KI = 0.0
+THETA_KD = 0.1
+
+J11 = -2 * RW/(3 * RK * np.cos(ALPHA))
+J12 = RW / (3 * RK * np.cos(ALPHA))
+J13 = J12
+J21 = 0
+J22 = -np.sqrt(3) * RW/ (3 * RK * np.cos(ALPHA))
+J23 = -1 * J22
+J31 = RW / (3 * RK * np.sin(ALPHA))
+J32 = J31
+J33 = J31
+
+J = np.array([[J11, J12, J13], [J21, J22, J23], [J31, J32, J33]])
+
+
 def register_topics(ser_dev:SerialProtocol):
     # Mo :: Commands, States
     ser_dev.serializer_dict[101] = [lambda bytes: np.frombuffer(bytes, dtype=mo_cmds_dtype), lambda data: data.tobytes()]
@@ -269,16 +281,15 @@ if __name__ == "__main__":
                     'yrange': [-2.0 * np.pi, 2.0 * np.pi]
                     }
 
-    stability_controller = {'names': ['SP Body Roll', 'Body Roll', 'SP Body Pitch', 'Body Pitch'],
+    stability_controller = {'names': ['P', 'I', 'D'],
                     'title': "Stability Controller",
-                    'ylabel': "rad",
+                    'ylabel': "Terms",
                     'xlabel': "time",
-                    'colors' : ["r", "g", "b", "y"],
-                    'line_width': [2]*4,
-                    'yrange': [-MAX_TILT, MAX_TILT]
+                    'colors' : ["r", "g", "b"],
+                    'line_width': [2]*3,
                     }
 
-    plot_config = [imu_states]
+    plot_config = [stability_controller]
     client.initialize_plots(plot_config)
 
     ser_dev = SerialProtocol()
@@ -293,6 +304,12 @@ if __name__ == "__main__":
     states = np.zeros(1, dtype=mo_states_dtype)[0]
 
     commands['kill'] = 0.0
+
+    dpsi = np.zeros((3, 1))
+    dphi = np.zeros((3, 1))
+
+    prev_dphi = dphi
+    ddphi = np.zeros((3, 1))
 
     # Time for comms to sync
     time.sleep(1.0)
@@ -310,20 +327,40 @@ if __name__ == "__main__":
     theta_roll_pid.output_limits = (-MAX_DUTY, MAX_DUTY)
     theta_pitch_pid.output_limits = (-MAX_DUTY, MAX_DUTY)
     
-    dots = init_lights(MAX_BRIGHTNESS)
+    # dots = init_lights(MAX_BRIGHTNESS)
 
     for t in SoftRealtimeLoop(dt=DT, report=True):
         try:
             states = ser_dev.get_cur_topic_data(121)[0]
         except KeyError as e:
             print("<< CALIBRATING >>")
-            dots.fill(color=(255, 191, 0))
-            dots.show()
+            # dots.fill(color=(255, 191, 0))
+            # dots.show()
             continue
+
+        dpsi[0] = states['dpsi_1']
+        dpsi[1] = states['dpsi_2']
+        dpsi[2] = states['dpsi_3']
+
+        dphi = np.matmul(J, dpsi)
+        ddphi = dphi - prev_dphi
+
+        print(ddphi)
 
         Tx = theta_roll_pid(states['theta_roll'])
         Ty = theta_pitch_pid(states['theta_pitch'])
         Tz = 0.0
+
+        if np.abs(states['theta_roll']) > MAX_TILT or np.abs(states['theta_pitch']) > MAX_TILT:
+            # Maximum Tilt angle constraint
+            pass
+        elif np.max(np.abs(dphi)) > MAX_BALL_VELOCITY:
+            # Maximum velocity attained, stop torque input
+            print("SLOW DOWN")
+            pass
+        else:
+            # print("In range!")
+            Ty = Ty + 0.3
 
         # Motor 1-3's positive direction is flipped hence the negative sign
 
@@ -333,18 +370,24 @@ if __name__ == "__main__":
 
         ser_dev.send_topic_data(101, commands)
 
-        data = [states['theta_roll'], states['theta_pitch']]
-        client.send_array(data)
+        prev_dphi = dphi
 
-        if np.abs(states['theta_roll']) != 0.0:
-            danger = compute_dots(states['theta_roll'], states['theta_pitch'])
+        # p, i , d = theta_pitch_pid.components
 
-        for dot in range(N_DOTS):
-            if dot in danger:
-                    dots[dot] = (255, 20, 20)
-            else:
-                    dots[dot] = (53, 118, 174)
-        dots.show()
+        # data = [p, i, d]
+        # print(commands['motor_1_duty'], commands['motor_2_duty'], commands['motor_3_duty'])
+
+        # client.send_array(data)
+
+        # if np.abs(states['theta_roll']) != 0.0:
+        #     danger = compute_dots(states['theta_roll'], states['theta_pitch'])
+
+        # for dot in range(N_DOTS):
+        #     if dot in danger:
+        #             dots[dot] = (255, 20, 20)
+        #     else:
+        #             dots[dot] = (53, 118, 174)
+        # dots.show()
 
     print("Resetting Mo commands.")
     commands['kill'] = 1.0
@@ -353,5 +396,5 @@ if __name__ == "__main__":
     commands['motor_3_duty'] = 0.0
     ser_dev.send_topic_data(101, commands)
 
-    dots.fill(color=(0, 0, 0))
-    dots.show()
+    # dots.fill(color=(0, 0, 0))
+    # dots.show()
