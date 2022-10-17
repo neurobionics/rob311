@@ -185,7 +185,6 @@ class SoftRealtimeLoop:
 
 # ---------------------------------------------------------------------------
 
-
 JOYSTICK_SCALE = 32767
 
 FREQ = 200
@@ -201,6 +200,7 @@ MIN_BRIGHTNESS = 0.01
 
 MAX_TILT = np.deg2rad(5) # Maximum inclination: 5 degrees
 MAX_BALL_VELOCITY = 0.5 # m/s
+MAX_LINEAR_VELOCITY = 0.5 # m/s
 
 MAX_DUTY = 0.8
 
@@ -226,6 +226,84 @@ J33 = J31
 
 J = np.array([[J11, J12, J13], [J21, J22, J23], [J31, J32, J33]])
 
+class MoController(Controller):
+    def __init__(self, **kwargs):
+        Controller.__init__(self, **kwargs)
+        self.MAX_TZ = 0.5 # Nm
+        self.MAX_ROTATION_TIME = 0.75 # Sec
+
+        self.Tz = 0.0
+        self.Ty = 0.0
+
+        self.Ty_lock = False
+        self.COOLDOWN = 0.5
+        self.MAX_ROTATION_ITER = int(self.MAX_ROTATION_TIME/DT)
+
+    def on_L3_right(self, value):
+        # VOID #
+        pass
+
+    def on_L3_left(self, value):
+        # VOID #
+        pass
+
+    def on_L3_up(self, value):
+        # VOID #
+        pass
+
+    def on_L3_down(self, value):
+        # VOID #
+        pass
+
+    def on_L3_x_at_rest(self):
+        # VOID #
+        pass
+
+    def on_L3_y_at_rest(self):
+        # VOID #
+        pass
+
+    def on_R3_up(self, value):
+        pass
+
+    def on_R3_down(self, value):
+        pass
+
+    def on_R3_right(self, value):
+        pass
+
+    def on_R3_left(self, value):
+        pass
+
+    def on_R3_x_at_rest(self):
+        self.roll_velocity = 0.0
+
+    def on_R3_y_at_rest(self):
+        self.pitch_velocity = 0.0
+
+    def on_R1_press(self):
+        for i in range(0, self.MAX_ROTATION_ITER):
+            self.Tz = self.MAX_TZ * np.sin(i)
+            time.sleep(DT)
+
+        time.sleep(self.COOLDOWN)
+    
+    def on_R1_release(self):
+        self.Tz = 0.0
+
+    def on_L1_press(self):
+        for i in range(0, self.MAX_ROTATION_ITER):
+            self.Tz = -1.0 * self.MAX_TZ * np.sin(i)
+            time.sleep(DT)
+
+        time.sleep(self.COOLDOWN)
+    
+    def on_L1_release(self):
+        self.Tz = 0.0
+
+    def on_options_press(self):
+        print("Exiting controller thread.")
+        sys.exit()
 
 def register_topics(ser_dev:SerialProtocol):
     # Mo :: Commands, States
@@ -329,6 +407,10 @@ if __name__ == "__main__":
     
     # dots = init_lights(MAX_BRIGHTNESS)
 
+    mo_controller = MoController(interface="/dev/input/js0", connecting_using_ds4drv=False)
+    mo_controller_thread = threading.Thread(target=mo_controller.listen, args=(10,))
+    mo_controller_thread.start()    
+
     for t in SoftRealtimeLoop(dt=DT, report=True):
         try:
             states = ser_dev.get_cur_topic_data(121)[0]
@@ -343,24 +425,23 @@ if __name__ == "__main__":
         dpsi[2] = states['dpsi_3']
 
         dphi = np.matmul(J, dpsi)
-        ddphi = dphi - prev_dphi
-
-        print(ddphi)
+        ddphi = (dphi - prev_dphi)/DT
 
         Tx = theta_roll_pid(states['theta_roll'])
         Ty = theta_pitch_pid(states['theta_pitch'])
-        Tz = 0.0
+        Tz = mo_controller.Tz
+
+        print(Tz)
 
         if np.abs(states['theta_roll']) > MAX_TILT or np.abs(states['theta_pitch']) > MAX_TILT:
             # Maximum Tilt angle constraint
             pass
         elif np.max(np.abs(dphi)) > MAX_BALL_VELOCITY:
             # Maximum velocity attained, stop torque input
-            print("SLOW DOWN")
             pass
         else:
             # print("In range!")
-            Ty = Ty + 0.3
+            Ty = Ty
 
         # Motor 1-3's positive direction is flipped hence the negative sign
 
@@ -369,6 +450,7 @@ if __name__ == "__main__":
         commands['motor_3_duty'] = (-0.3333) * (Tz + (1.4142 * (Ty - 1.7320 * Tx)))
 
         ser_dev.send_topic_data(101, commands)
+        # print(ddphi)
 
         prev_dphi = dphi
 
