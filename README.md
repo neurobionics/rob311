@@ -1,3 +1,5 @@
+<img src="https://github.com/neurobionics/rob311/blob/main/rob311.png" width="1024">
+
 ## Installation
 
 After cloning the repo, run the setup script:
