@@ -1,7 +1,7 @@
 import numpy as np
 
 mo_cmds_dtype =  np.dtype([
-    ("kill", np.double),
+    ("start", np.double),
     ("motor_1_duty", np.double),
     ("motor_2_duty", np.double),
     ("motor_3_duty", np.double)
