@@ -25,3 +25,7 @@ picoload /dev/sda1
 ```
 
 Note that the drive name ("sda1") changes everytime you connect the pico to the Rpi.
+
+## Fall 2022
+
+<img src="https://github.com/neurobionics/rob311/blob/main/fall_2022.png" width="1024">
