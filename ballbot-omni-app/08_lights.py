@@ -5,7 +5,11 @@ import time
 import numpy as np
 import adafruit_dotstar as dotstar
 
-# TEST
+"""
+ROB 311 - Adafruit LED strip demo
+Authors: Senthur Raj, Gray Thomas, Yves Nazon and Elliott Rouse 
+Neurobionics Lab / Locomotor Control Lab
+"""
 
 FREQ = 200
 DT = 1/FREQ

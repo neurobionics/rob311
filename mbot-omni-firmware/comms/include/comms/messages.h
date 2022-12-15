@@ -7,7 +7,7 @@
 #define MESSAGES_H
 
 typedef struct mo_cmds {
-    double kill;
+    double start;
     double motor_1_duty; // Motor 1 Duty
     double motor_2_duty; // Motor 2 Duty
     double motor_3_duty; // Motor 3 Duty

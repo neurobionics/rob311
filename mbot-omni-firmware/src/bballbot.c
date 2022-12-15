@@ -21,11 +21,11 @@
 #define INT_16_MAX 32768
 
 #define MAX_PWM (INT_16_MAX - 128)
-#define MIN_PWM 1300
+#define MIN_PWM 1240
 
 #define DMP_SATURATION_TIME 10.0f //25.0f
 
-#define Rw 0.096f // Radius of the Wheel
+#define Rw 0.048f // Radius of the Wheel
 #define Rk 0.1210f 
 #define ALPHA 0.7854f
 
@@ -113,7 +113,7 @@ int main() {
     rc_encoder_init();
     rc_current_sense_init();
 
-    static int32_t kill = 1;
+    static int32_t start = 0;
     int cmd_success = true;
 
     // LED
@@ -165,9 +165,9 @@ int main() {
 
         rc_motor_init();
         cmd_success &= comms_get_topic_data(101, &mo_cmd);
-        kill = mo_cmd.kill;
+        start = mo_cmd.start;
 
-        while (kill<0.5f) {
+        while (start>0.5f) {
             toc = get_absolute_time();
             timestep = absolute_time_diff_us(tic, toc) * 0.000001f; // Microseconds to Seconds
 
@@ -215,7 +215,7 @@ int main() {
 
                 // GET COMMANDS
                 cmd_success &= comms_get_topic_data(101, &mo_cmd);
-                kill = mo_cmd.kill;
+                start = mo_cmd.start;
 
                 printf("\r");
                 printf("Roll: %7.3f, Pitch: %7.3f | ", mo_state.theta_roll, mo_state.theta_pitch);
