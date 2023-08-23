@@ -24,7 +24,16 @@ make
 picoload /dev/sda1
 ```
 
-Note that the drive name ("sda1") changes everytime you connect the pico to the Rpi.
+Note: The drive name ("sda1") changes everytime you connect the pico to the Rpi.
+
+## Enabling SPI and I2C
+Please enable SPI and I2C using **raspi-config**.
+
+```bash
+sudo raspi-config
+```
+Navigate to **Interface Options** and enable **SPI** and **I2C**.
+
 
 ## Fall 2022
 
