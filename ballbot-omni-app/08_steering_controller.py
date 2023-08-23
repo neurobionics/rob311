@@ -6,7 +6,6 @@ from threading import Thread
 from MBot.Messages.message_defs import mo_states_dtype, mo_cmds_dtype, mo_pid_params_dtype
 from MBot.SerialProtocol.protocol import SerialProtocol
 from rtplot import client
-from scipy.signal import butter, lfilter, filtfilt
 from simple_pid import PID
 from pyPS4Controller.controller import Controller
 import board
