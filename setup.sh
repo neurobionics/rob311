@@ -10,4 +10,4 @@ echo "[Setup] Building..."
 cd ./mbot-omni-firmware/build && cmake ..
 make -j4
 echo "[Setup] Creating /mnt/pico..."
-mkdir /mnt/pico
+sudo mkdir /mnt/pico
