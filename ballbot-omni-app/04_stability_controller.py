@@ -199,8 +199,8 @@ MAX_PLANAR_DUTY = 0.8
 
 # Proportional gains for the stability controllers (X-Z and Y-Z plane)
 
-KP_THETA_X = 0.0                                   # Adjust until the system balances
-KP_THETA_Y = 0.0                                   # Adjust until the system balances
+KP_THETA_X = 7.0                                   # Adjust until the system balances
+KP_THETA_Y = 7.0                                   # Adjust until the system balances
 
 # ---------------------------------------------------------------------------
 

@@ -5,7 +5,6 @@ import numpy as np
 from threading import Thread
 from MBot.Messages.message_defs import mo_states_dtype, mo_cmds_dtype, mo_pid_params_dtype
 from MBot.SerialProtocol.protocol import SerialProtocol
-from scipy.signal import butter, lfilter, filtfilt
 from simple_pid import PID
 from pyPS4Controller.controller import Controller
 import board
@@ -546,9 +545,6 @@ if __name__ == "__main__":
     commands = np.zeros(1, dtype=mo_cmds_dtype)[0]
     states = np.zeros(1, dtype=mo_states_dtype)[0]
 
-    commands['start'] = 1.0
-    zeroed = False
-
     psi = np.zeros((3, 1))
     psi_offset = np.zeros((3, 1))
 
@@ -595,6 +591,9 @@ if __name__ == "__main__":
     T1 = 0.0
     T2 = 0.0
     T3 = 0.0
+
+    commands['start'] = 1.0
+    zeroed = False
 
     # Time for comms to sync
     time.sleep(1.0)
