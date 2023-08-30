@@ -17,6 +17,7 @@ add_compile_options(-Wall
         -Wno-maybe-uninitialized
         )
 
+add_subdirectory(mbot)
 add_subdirectory(rc)
 add_subdirectory(comms)
 add_subdirectory(controls)
