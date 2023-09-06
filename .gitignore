@@ -1,2 +1,3 @@
 /mbot-omni-firmware/build
 *.pyc
+ballbot-omni-app/main.py
