@@ -189,8 +189,8 @@ int main() {
                 // IMU DMP DATA: CHECK
                 // New Bosch IMU's have a different orientation, hence the roll & pitch swap and negative signs
                 // Axis transformation from the IMU space to Ballbot space is taken care of within the pico
-                mo_state.theta_roll = -1.0 * (mbot_imu_data.rpy[1] - theta_roll_offset);
-                mo_state.theta_pitch = 1.0 * (mbot_imu_data.rpy[0] - theta_pitch_offset);
+                mo_state.theta_roll = 1.0 * (mbot_imu_data.rpy[1] - theta_roll_offset);
+                mo_state.theta_pitch = -1.0 * (mbot_imu_data.rpy[0] - theta_pitch_offset);
                 mo_state.theta_yaw = 1.0 * (mbot_imu_data.rpy[2] - theta_pitch_offset);
                 
                 // MOTOR STATES: CHECK

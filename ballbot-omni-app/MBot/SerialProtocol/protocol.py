@@ -51,7 +51,7 @@ class SerialProtocol:
         while(protocol.running):
             valid_header = True
             valid_message = True
-            header_data = np.zeros(protocol.ROS_HEADER_LENGTH, dtype=np.int)
+            header_data = np.zeros(protocol.ROS_HEADER_LENGTH, dtype=int)
 
             # wait for initial sync byte
             while(header_data[0] != 0xff):
@@ -68,7 +68,7 @@ class SerialProtocol:
                 header_data[1:] = [byte for byte in header_timeout_bytes]
 
                 # check the sync flag/protocol version
-                valid_header = valid_header and (header_data[1] == 0xfe);
+                valid_header = valid_header and (header_data[1] == 0xfe)
 
                 # compute the checksum on the received message length
                 #and compare it to the received checksum
@@ -84,7 +84,7 @@ class SerialProtocol:
                 if(len(msg_data_serialzied) != message_len):
                     valid_message = False
                 topic_msg_data_checksum = int.from_bytes(protocol.serial_dev.read(), protocol.endianness)
-                cs2_addends = np.zeros(message_len + 2, dtype=np.int)
+                cs2_addends = np.zeros(message_len + 2, dtype=int)
                 cs2_addends[0:2] = header_data[5:7]
                 cs2_addends[2:] = [byte for byte in msg_data_serialzied]
                 cs_topic_msg_data = protocol.checksum(cs2_addends)
